@@ -1,0 +1,1301 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>絶エデン P2 氷滑り　ダイアモンドダスト練習</title>
+<style>
+  :root{
+    color-scheme: dark;
+    --bg:#0c1018;
+    --panel:rgba(12,16,24,.82);
+    --line:rgba(255,255,255,.14);
+    --text:#eef3ff;
+    --muted:#aeb8cc;
+    --accent:#b7d7ff;
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;height:100%;overflow:hidden;background:var(--bg);font-family:system-ui,-apple-system,"Segoe UI",sans-serif;color:var(--text)}
+  canvas{display:block;width:100vw;height:100vh;touch-action:none}
+  .topLinks{position:fixed;right:16px;top:14px;z-index:20;display:flex;gap:16px;align-items:center;font-size:13px}
+  .langSwitch{display:flex;gap:6px;align-items:center}
+  .langBtn{appearance:none;border:1px solid rgba(255,255,255,.18);background:rgba(255,255,255,.06);color:var(--text);padding:4px 8px;border-radius:999px;cursor:pointer;font-size:12px;line-height:1}
+  .langBtn.active{background:rgba(183,215,255,.18);border-color:rgba(183,215,255,.7)}
+  .topLinks a{color:var(--text);text-decoration:none}
+  .topLinks a:hover{text-decoration:underline}
+  .hud{position:fixed;left:14px;top:14px;max-width:min(430px,calc(100vw - 28px));padding:12px 14px;border:1px solid var(--line);border-radius:14px;background:var(--panel);backdrop-filter:blur(10px);font-size:13px;line-height:1.55}
+  .hud b{font-size:14px}
+  .sectionTitle{margin-top:10px;margin-bottom:6px;font-size:12px;font-weight:700;color:var(--muted);letter-spacing:.04em}
+  .row{display:flex;gap:8px;flex-wrap:wrap;margin-top:4px}
+  button{appearance:none;border:1px solid rgba(255,255,255,.2);background:rgba(255,255,255,.08);color:var(--text);padding:8px 10px;border-radius:10px;cursor:pointer}
+  button:hover{background:rgba(255,255,255,.13)}
+  .primaryBtn{border:2px solid rgba(95,170,255,.95);box-shadow:0 0 0 1px rgba(95,170,255,.25) inset;background:rgba(70,130,220,.12)}
+  .primaryBtn:hover{background:rgba(70,130,220,.20)}
+  details.settings{margin-top:10px;border-top:1px solid rgba(255,255,255,.10);padding-top:8px}
+  details.settings summary{list-style:none;cursor:pointer;font-size:13px;font-weight:700;color:var(--text)}
+  details.settings summary::-webkit-details-marker{display:none}
+  details.settings summary::after{content:'▼';float:right;color:var(--muted);font-size:11px;transform:translateY(1px)}
+  details.settings:not([open]) summary::after{content:'▶'}
+  .checkRow{display:flex;align-items:center;gap:8px;margin-top:12px;color:var(--muted);cursor:pointer}
+  .checkRow input{width:18px;height:18px;accent-color:var(--accent)}
+  .pill{display:inline-block;padding:2px 7px;border:1px solid rgba(255,255,255,.16);border-radius:999px;color:var(--muted)}
+  .cameraSlider{display:block;margin-top:10px;color:var(--muted)}
+  .cameraSlider span{display:flex;justify-content:space-between;gap:12px;margin-bottom:4px}
+  .cameraSlider input{width:100%;accent-color:var(--accent)}
+  .paramGrid{display:grid;grid-template-columns:1fr 1fr;gap:0 12px}
+  .padMap{display:grid;grid-template-columns:1fr 1fr;gap:8px 12px;margin-top:10px}
+  .padMap label{display:flex;flex-direction:column;gap:4px;color:var(--muted)}
+  .padMap select{width:100%;padding:7px 8px;border-radius:9px;border:1px solid rgba(255,255,255,.18);background:#171d29;color:var(--text)}
+  .result{margin-top:8px;font-weight:700}
+  .deadFlash{animation:deadPulse .28s ease-out}
+  @keyframes deadPulse{0%{filter:none}35%{filter:brightness(1.8)}100%{filter:none}}
+  @media(max-width:560px){.paramGrid,.padMap{grid-template-columns:1fr}}
+  .debug{margin-top:7px;color:var(--muted);font-variant-numeric:tabular-nums}
+  .help{position:fixed;right:14px;bottom:14px;max-width:min(440px,calc(100vw - 28px));padding:10px 12px;border:1px solid var(--line);border-radius:12px;background:var(--panel);font-size:12px;line-height:1.55;color:var(--muted)}
+  .centerMsg{position:fixed;left:50%;top:16%;transform:translateX(-50%);font-size:18px;font-weight:700;text-shadow:0 2px 8px #000;pointer-events:none}
+</style>
+</head>
+<body>
+<canvas id="c"></canvas>
+
+<div class="topLinks">
+  <div class="langSwitch">
+    <button id="langJaBtn" class="langBtn" type="button">JA</button>
+    <button id="langEnBtn" class="langBtn" type="button">EN</button>
+  </div>
+  <a href="./README_bilingual.md" target="_blank" rel="noopener">README</a>
+  <a href="https://pilsnerdrinker.github.io/raidshelf/" target="_blank" rel="noopener">raidshelf</a>
+</div>
+
+<div class="hud">
+  <b id="appTitle">絶エデン P2 氷滑り　ダイアモンドダスト練習</b><br>
+
+  <div class="sectionTitle" id="actionsTitle">操作</div>
+  <div class="row">
+    <button id="randomBothBtn" class="primaryBtn">立ち位置＋カメラ角度ランダム</button>
+    <button id="randomStartBtn">カメラ角度のみランダム</button>
+    <button id="resetBtn">リセット</button>
+    <button id="modeBtn">滑走</button>
+    <button id="macroBtn">カメラ正面へ滑る</button>
+    <button id="markerBtn">1234</button>
+  </div>
+
+  <div class="sectionTitle" id="padTitle">PADボタン配置</div>
+  <div class="padMap">
+    <label>
+      <span id="slidePadLabel">カメラ正面へ滑る</span>
+      <select id="slidePadSelect"></select>
+    </label>
+    <label>
+      <span id="randomBothPadLabel">立ち位置＋カメラ角度ランダム</span>
+      <select id="randomBothPadSelect"></select>
+    </label>
+    <label>
+      <span id="randomPadLabel">カメラ角度のみランダム</span>
+      <select id="randomPadSelect"></select>
+    </label>
+    <label>
+      <span id="modePadLabel">滑走 / 徒歩 切替</span>
+      <select id="modePadSelect"></select>
+    </label>
+  </div>
+
+  <details class="settings">
+    <summary id="settingsSummary">詳細設定</summary>
+    <label class="checkRow">
+      <input id="noBossSideStart" type="checkbox">
+      <span id="noBossSideStartLabel">ボス側からスタートしない</span>
+    </label>
+
+    <label class="cameraSlider">
+      <span><span id="heightLabel">視点の高さ</span> <b id="heightValue">6.0</b></span>
+      <input id="heightSlider" type="range" min="3.5" max="16" step="0.1" value="6.0">
+    </label>
+    <label class="cameraSlider">
+      <span><span id="screenYLabel">キャラの画面内上下位置</span> <b id="screenYValue">70%</b></span>
+      <input id="screenYSlider" type="range" min="35" max="72" step="1" value="70">
+    </label>
+    <label class="cameraSlider">
+      <span><span id="cameraSpeedLabel">カメラ速度</span> <b id="cameraSpeedValue">1.8×</b></span>
+      <input id="cameraSpeedSlider" type="range" min="0.5" max="3.0" step="0.1" value="1.8">
+    </label>
+    <label class="cameraSlider">
+      <span><span id="fovLabel">視野角</span> <b id="fovValue">50°</b></span>
+      <input id="fovSlider" type="range" min="40" max="70" step="1" value="50">
+    </label>
+
+    <div class="paramGrid">
+      <label class="cameraSlider">
+        <span><span id="slideLabel">滑走距離（直径比）</span> <b id="slideValue">77%</b></span>
+        <input id="slideSlider" type="range" min="65" max="85" step="1" value="77">
+      </label>
+      <label class="cameraSlider">
+        <span><span id="safeLabel">安置の角度幅</span> <b id="safeValue">70°</b></span>
+        <input id="safeSlider" type="range" min="60" max="90" step="1" value="70">
+      </label>
+      <label class="cameraSlider">
+        <span><span id="slideSensitivityLabel">滑走開始感度</span> <b id="slideSensitivityValue">0.18</b></span>
+        <input id="slideSensitivitySlider" type="range" min="0.08" max="0.70" step="0.01" value="0.18">
+      </label>
+    </div>
+  </details>
+
+  <div class="result" id="result">A方向のボスを越えて背面安置へ滑ってみよう</div>
+</div>
+
+<div class="centerMsg" id="msg"></div>
+
+<div class="help">
+  <b id="helpTitle">操作</b><br>
+  <span id="helpLine1">WASD / 左スティック：滑走モードでは一度入力で滑走、徒歩モードでは通常移動</span><br>
+  <span id="helpLine2">右スティック：左右＝カメラ回転、上下＝カメラ俯角</span><br>
+  <span id="helpLine3">←→：カメラ左右回転　↑↓：カメラ上下角度</span><br>
+  <span id="helpLine4">マウス・タッチドラッグ：左右＝カメラ回転、上下＝視点角度</span><br>
+  <span id="helpLine5">マウスホイール：カメラをズームイン / ズームアウト</span><br>
+  <span id="helpLine6">キャラ本体をドラッグ：床上の好きな位置へ移動</span><br>
+  <span id="helpLine7">Space：滑走モードでカメラ正面へ滑走</span><br>
+  <span id="helpLine8">PADの滑走 / カメラ角度のみランダムは上の設定で変更可能</span><br>
+  <span id="helpLine9">「立ち位置＋カメラ角度ランダム」では、C付近やボス側のランダム位置から開始</span>
+</div>
+
+<script>
+(() => {
+  const canvas = document.getElementById('c');
+  const ctx = canvas.getContext('2d');
+  const msg = document.getElementById('msg');
+  const result = document.getElementById('result');
+
+  const qsLang = new URLSearchParams(location.search).get('lang');
+  let currentLang = qsLang === 'en' ? 'en' : 'ja';
+  let lastResult = {key:'initial', args:{}};
+
+  const I18N = {
+    ja: {
+      title: '絶エデン P2 氷滑り　ダイアモンドダスト練習',
+      actionsTitle: '操作',
+      padTitle: 'PADボタン配置',
+      settingsSummary: '詳細設定',
+      randomBothBtn: '立ち位置＋カメラ角度ランダム',
+      randomStartBtn: 'カメラ角度のみランダム',
+      resetBtn: 'リセット',
+      modeSlide: '滑走',
+      modeWalk: '徒歩',
+      macroBtn: 'カメラ正面へ滑る',
+      macroBtnWalk: '徒歩モード中',
+      slidePadLabel: 'カメラ正面へ滑る',
+      randomBothPadLabel: '立ち位置＋カメラ角度ランダム',
+      randomPadLabel: 'カメラ角度のみランダム',
+      modePadLabel: '滑走 / 徒歩 切替',
+      noBossSideStartLabel: 'ボス側からスタートしない',
+      heightLabel: '視点の高さ',
+      screenYLabel: 'キャラの画面内上下位置',
+      cameraSpeedLabel: 'カメラ速度',
+      fovLabel: '視野角',
+      slideLabel: '滑走距離（直径比）',
+      safeLabel: '安置の角度幅',
+      slideSensitivityLabel: '滑走開始感度',
+      helpTitle: '操作',
+      helpLine1: 'WASD / 左スティック：滑走モードでは一度入力で滑走、徒歩モードでは通常移動',
+      helpLine2: '右スティック：左右＝カメラ回転、上下＝カメラ俯角',
+      helpLine3: '←→：カメラ左右回転　↑↓：カメラ上下角度',
+      helpLine4: 'マウス・タッチドラッグ：左右＝カメラ回転、上下＝視点角度',
+      helpLine5: 'マウスホイール：カメラをズームイン / ズームアウト',
+      helpLine6: 'キャラ本体をドラッグ：床上の好きな位置へ移動',
+      helpLine7: 'Space：滑走モードでカメラ正面へ滑走',
+      helpLine8: 'PADの滑走 / カメラ角度のみランダムは上の設定で変更可能',
+      helpLine9: '「立ち位置＋カメラ角度ランダム」では、C付近やボス側のランダム位置から開始',
+      none: 'なし',
+      dpadUp: '十字キー ↑',
+      dpadDown: '十字キー ↓',
+      dpadLeft: '十字キー ←',
+      dpadRight: '十字キー →',
+      initial: 'A方向のボスを越えて背面安置へ滑ってみよう',
+      placementChanged: '配置変更：ここから滑走できます',
+      charPlaced: 'キャラ配置完了：ここから滑走できます',
+      resetStatus: 'リセット：ボス=A方向 / キャラ=南側3本目の円 / カメラ=A向き',
+      randomCameraStatus: ({side, offset}) => `カメラ角度のみランダム：ボス=A / キャラ=C側固定、カメラをAから ${side} ${offset}°`,
+      bossSector: 'ボス側区間',
+      oppositeSector: '対角側区間',
+      left: '左',
+      right: '右',
+      randomBothStatus: ({bossDeg, sector, angleDeg, radius, side, offset}) => `立ち位置＋カメラ角度ランダム：ボス ${bossDeg}°、${sector} 位置 ${angleDeg}° / 半径 ${radius}、カメラ ${side} ${offset}°`,
+      modeSlideStatus: '滑走モード：一度入力すると一定距離滑ります',
+      modeWalkStatus: '徒歩モード：WASD / 左スティックで通常移動します',
+      success: ({diff}) => `成功：ボス背面安置内（中心から ${diff}°）`,
+      miss: ({diff, allow}) => `外れ：ボス背面中心から ${diff}°（許容 ±${allow}°）`
+    },
+    en: {
+      title: 'FRU P2 Ice Slide - Diamond Dust Practice',
+      actionsTitle: 'Controls',
+      padTitle: 'Gamepad Button Mapping',
+      settingsSummary: 'Detailed Settings',
+      randomBothBtn: 'Random Position + Camera',
+      randomStartBtn: 'Random Camera Only',
+      resetBtn: 'Reset',
+      modeSlide: 'Slide',
+      modeWalk: 'Walk',
+      macroBtn: 'Slide Forward',
+      macroBtnWalk: 'Walk Mode',
+      slidePadLabel: 'Slide Forward',
+      randomBothPadLabel: 'Random Position + Camera',
+      randomPadLabel: 'Random Camera Only',
+      modePadLabel: 'Toggle Slide / Walk',
+      noBossSideStartLabel: 'Do not start from the boss-side sector',
+      heightLabel: 'Camera Height',
+      screenYLabel: 'Character Screen Y Position',
+      cameraSpeedLabel: 'Camera Speed',
+      fovLabel: 'Field of View',
+      slideLabel: 'Slide Distance (diameter ratio)',
+      safeLabel: 'Safe-zone Angle',
+      slideSensitivityLabel: 'Slide Start Sensitivity',
+      helpTitle: 'Controls',
+      helpLine1: 'WASD / Left Stick: one input starts a slide in Slide mode, normal movement in Walk mode',
+      helpLine2: 'Right Stick: left/right = camera yaw, up/down = camera pitch',
+      helpLine3: '←→: camera left/right   ↑↓: camera up/down',
+      helpLine4: 'Mouse / touch drag: left/right = camera yaw, up/down = camera pitch',
+      helpLine5: 'Mouse wheel: zoom in / zoom out',
+      helpLine6: 'Drag the character: place it anywhere on the arena floor',
+      helpLine7: 'Space: slide forward in the current camera direction while in Slide mode',
+      helpLine8: 'Gamepad mappings for slide / random camera can be changed above',
+      helpLine9: '"Random Position + Camera" starts from a random position near C or on the boss-side sector',
+      none: 'None',
+      dpadUp: 'D-pad ↑',
+      dpadDown: 'D-pad ↓',
+      dpadLeft: 'D-pad ←',
+      dpadRight: 'D-pad →',
+      initial: 'Try sliding past the A-side boss into the rear safe zone.',
+      placementChanged: 'Position changed: you can slide from here.',
+      charPlaced: 'Character moved: you can slide from here.',
+      resetStatus: 'Reset: boss at A / character on the south third ring / camera facing A',
+      randomCameraStatus: ({side, offset}) => `Random Camera Only: boss fixed at A / character fixed on C-side / camera ${offset}° to the ${side} from A`,
+      bossSector: 'boss-side sector',
+      oppositeSector: 'opposite-side sector',
+      left: 'left',
+      right: 'right',
+      randomBothStatus: ({bossDeg, sector, angleDeg, radius, side, offset}) => `Random Position + Camera: boss ${bossDeg}°, ${sector}, position ${angleDeg}° / radius ${radius}, camera ${offset}° to the ${side}`,
+      modeSlideStatus: 'Slide mode: one input sends you sliding a fixed distance.',
+      modeWalkStatus: 'Walk mode: normal movement with WASD / left stick.',
+      success: ({diff}) => `Success: inside the rear safe zone (${diff}° from center)`,
+      miss: ({diff, allow}) => `Miss: ${diff}° from the rear center (allowed ±${allow}°)`
+    }
+  };
+
+  function t(key, args={}){
+    const entry = I18N[currentLang][key];
+    return typeof entry === 'function' ? entry(args) : entry;
+  }
+
+  function setResult(key, args={}, color=''){
+    lastResult = {key, args};
+    result.textContent = t(key, args);
+    result.style.color = color;
+  }
+
+  function sideWord(sign){
+    return sign < 0 ? t('left') : t('right');
+  }
+
+  function getPadButtonOptions(){
+    return [
+      [-1, t('none')],
+      [0, 'A / ×'],
+      [1, 'B / ○'],
+      [2, 'X / □'],
+      [3, 'Y / △'],
+      [4, 'LB / L1'],
+      [5, 'RB / R1'],
+      [6, 'LT / L2'],
+      [7, 'RT / R2'],
+      [8, 'Back / Share'],
+      [9, 'Start / Options'],
+      [10, 'L3'],
+      [11, 'R3'],
+      [12, t('dpadUp')],
+      [13, t('dpadDown')],
+      [14, t('dpadLeft')],
+      [15, t('dpadRight')]
+    ];
+  }
+
+  function updateModeUI(){
+    modeBtn.textContent = movementMode==='slide' ? t('modeSlide') : t('modeWalk');
+    macroBtn.disabled = movementMode!=='slide';
+    macroBtn.textContent = movementMode==='slide' ? t('macroBtn') : t('macroBtnWalk');
+  }
+
+  function refreshPadSelects(){
+    const configs = [
+      [slidePadSelect, slidePadButton],
+      [randomBothPadSelect, randomBothPadButton],
+      [randomPadSelect, randomPadButton],
+      [modePadSelect, modePadButton]
+    ];
+    const options = getPadButtonOptions();
+    for(const [select, current] of configs){
+      select.innerHTML = '';
+      for(const [value, label] of options){
+        const option = document.createElement('option');
+        option.value = String(value);
+        option.textContent = label;
+        option.selected = value === current;
+        select.appendChild(option);
+      }
+    }
+  }
+
+  function applyLanguage(){
+    document.documentElement.lang = currentLang;
+    document.title = t('title');
+    document.getElementById('appTitle').textContent = t('title');
+    document.getElementById('actionsTitle').textContent = t('actionsTitle');
+    document.getElementById('padTitle').textContent = t('padTitle');
+    document.getElementById('settingsSummary').textContent = t('settingsSummary');
+    document.getElementById('randomBothBtn').textContent = t('randomBothBtn');
+    document.getElementById('randomStartBtn').textContent = t('randomStartBtn');
+    document.getElementById('resetBtn').textContent = t('resetBtn');
+    document.getElementById('slidePadLabel').textContent = t('slidePadLabel');
+    document.getElementById('randomBothPadLabel').textContent = t('randomBothPadLabel');
+    document.getElementById('randomPadLabel').textContent = t('randomPadLabel');
+    document.getElementById('modePadLabel').textContent = t('modePadLabel');
+    document.getElementById('noBossSideStartLabel').textContent = t('noBossSideStartLabel');
+    document.getElementById('heightLabel').textContent = t('heightLabel');
+    document.getElementById('screenYLabel').textContent = t('screenYLabel');
+    document.getElementById('cameraSpeedLabel').textContent = t('cameraSpeedLabel');
+    document.getElementById('fovLabel').textContent = t('fovLabel');
+    document.getElementById('slideLabel').textContent = t('slideLabel');
+    document.getElementById('safeLabel').textContent = t('safeLabel');
+    document.getElementById('slideSensitivityLabel').textContent = t('slideSensitivityLabel');
+    document.getElementById('helpTitle').textContent = t('helpTitle');
+    for(let i=1;i<=9;i++){
+      document.getElementById('helpLine'+i).textContent = t('helpLine'+i);
+    }
+
+    document.getElementById('langJaBtn').classList.toggle('active', currentLang==='ja');
+    document.getElementById('langEnBtn').classList.toggle('active', currentLang==='en');
+
+    updateModeUI();
+    refreshPadSelects();
+    setResult(lastResult.key, lastResult.args, result.style.color || '');
+  }
+
+  function setLanguage(lang){
+    currentLang = lang === 'en' ? 'en' : 'ja';
+    const url = new URL(location.href);
+    if(currentLang === 'en') url.searchParams.set('lang', 'en');
+    else url.searchParams.delete('lang');
+    history.replaceState(null, '', url.toString());
+    applyLanguage();
+  }
+
+  document.getElementById('langJaBtn').addEventListener('click', ()=>setLanguage('ja'));
+  document.getElementById('langEnBtn').addEventListener('click', ()=>setLanguage('en'));
+
+  let W=innerWidth,H=innerHeight,DPR=Math.min(devicePixelRatio||1,2);
+  function resize(){
+    W=innerWidth; H=innerHeight; DPR=Math.min(devicePixelRatio||1,2);
+    canvas.width=Math.floor(W*DPR); canvas.height=Math.floor(H*DPR);
+    canvas.style.width=W+'px'; canvas.style.height=H+'px';
+    ctx.setTransform(DPR,0,0,DPR,0,0);
+  }
+  addEventListener('resize',resize); resize();
+
+  // world: x=east, y=north, z=up
+  const arenaR = 10;
+  const waymarkR = 9.20;
+  const practiceStart = {x:0, y:-7.5}; // third ring from center on south side
+  const boss = {x:0, y:5.0, facing:Math.PI, dirDeg:0}; // current boss position on second inner ring
+  let numberMarkerOrder = '1234';
+  let movementMode = 'slide'; // slide | walk
+  let noBossSideStart = false;
+  let slideRatio = 0.77;
+  let safeAngleDeg = 70;
+  let slideStartSensitivity = 0.18;
+  const walkSpeed = 4.4;
+  const lethalR = arenaR - 0.08;
+  let deathFlashUntil = 0;
+  let lastDeathAt = -Infinity;
+  let slideWillDie = false;
+  const player = {
+    x: practiceStart.x, y: practiceStart.y,
+    facing: 0,
+    sliding:false,
+    sx:0, sy:0,
+    ex:0, ey:0,
+    t0:0, duration:560
+  };
+
+  let camYaw = 0;              // 0 = camera looks north
+  let camHeight = 6.0;
+  let cameraSpeed = 1.8;
+  let screenYRatio = 0.70;       // projected camera target vertical position
+  let camBack = 9.4;
+  const minCamBack = 5.5;
+  const maxCamBack = 22.0;
+  let fovDeg = 50;
+  let fov = fovDeg*Math.PI/180;
+
+  let keys = {};
+  let prevKeys = {};
+  let gpPrevButtons = [];
+  let slidePadButton = 1;      // B / Circle
+  let randomBothPadButton = 2; // X / Square
+  let randomPadButton = 3;     // Y / Triangle
+  let modePadButton = 0;       // A / Cross
+  let lastGpLX = 0;
+  let lastGpLY = 0;
+  let stickArmed = true;
+  let lastInputAngle = null;
+  let lastSlideAngle = null;
+  let flashUntil = 0;
+  let dragCameraTarget = null;
+
+  function norm2(x,y){
+    const l=Math.hypot(x,y)||1;
+    return [x/l,y/l];
+  }
+  function clamp(v,a,b){ return Math.max(a,Math.min(b,v)); }
+  function lerp(a,b,t){ return a+(b-a)*t; }
+  function easeOutCubic(t){ return 1-Math.pow(1-t,3); }
+  function deg(rad){ return ((rad*180/Math.PI)%360+360)%360; }
+
+  function cameraBasis(){
+    const gf = {x:Math.sin(camYaw), y:Math.cos(camYaw), z:0}; // forward on floor
+    const target = dragCameraTarget || {x:player.x, y:player.y+0.7, z:0.4};
+    const cam = {x:target.x-gf.x*camBack, y:target.y-gf.y*camBack, z:camHeight};
+    let fx=target.x-cam.x, fy=target.y-cam.y, fz=target.z-cam.z;
+    const fl=Math.hypot(fx,fy,fz); fx/=fl; fy/=fl; fz/=fl;
+    // right = forward x worldUp
+    let rx=fy, ry=-fx, rz=0;
+    const rl=Math.hypot(rx,ry)||1; rx/=rl; ry/=rl;
+    // up = right x forward
+    let ux=ry*fz-rz*fy;
+    let uy=rz*fx-rx*fz;
+    let uz=rx*fy-ry*fx;
+    const ul=Math.hypot(ux,uy,uz)||1; ux/=ul; uy/=ul; uz/=ul;
+    return {cam, f:{x:fx,y:fy,z:fz}, r:{x:rx,y:ry,z:rz}, u:{x:ux,y:uy,z:uz}, gf};
+  }
+
+  function project(p){
+    const B=cameraBasis();
+    const dx=p.x-B.cam.x, dy=p.y-B.cam.y, dz=p.z-B.cam.z;
+    const cx=dx*B.r.x+dy*B.r.y+dz*B.r.z;
+    const cy=dx*B.u.x+dy*B.u.y+dz*B.u.z;
+    const cz=dx*B.f.x+dy*B.f.y+dz*B.f.z;
+    if(cz<=0.08) return null;
+    const focal=(H*0.5)/Math.tan(fov/2);
+    return {x:W/2 + focal*cx/cz, y:H*screenYRatio - focal*cy/cz, z:cz};
+  }
+
+  function screenToGround(sx,sy){
+    const B=cameraBasis();
+    const focal=(H*0.5)/Math.tan(fov/2);
+    const xn=(sx-W/2)/focal;
+    const yn=(H*screenYRatio-sy)/focal;
+
+    let dx=B.f.x+B.r.x*xn+B.u.x*yn;
+    let dy=B.f.y+B.r.y*xn+B.u.y*yn;
+    let dz=B.f.z+B.r.z*xn+B.u.z*yn;
+    const dl=Math.hypot(dx,dy,dz)||1;
+    dx/=dl; dy/=dl; dz/=dl;
+
+    if(Math.abs(dz)<1e-5) return null;
+    const t=-B.cam.z/dz;
+    if(t<=0) return null;
+    return {x:B.cam.x+dx*t,y:B.cam.y+dy*t};
+  }
+
+  function playerHitTest(sx,sy){
+    const head=project({x:player.x,y:player.y,z:1.18});
+    const base=project({x:player.x,y:player.y,z:.08});
+    if(!head || !base) return false;
+    const dHead=Math.hypot(sx-head.x,sy-head.y);
+    const dBody=distanceToSegment(sx,sy,base.x,base.y,head.x,head.y);
+    return dHead<=30 || dBody<=22;
+  }
+
+  function distanceToSegment(px,py,x1,y1,x2,y2){
+    const vx=x2-x1, vy=y2-y1;
+    const wx=px-x1, wy=py-y1;
+    const vv=vx*vx+vy*vy || 1;
+    const t=clamp((wx*vx+wy*vy)/vv,0,1);
+    const qx=x1+vx*t, qy=y1+vy*t;
+    return Math.hypot(px-qx,py-qy);
+  }
+
+  function placePlayerOnGround(sx,sy){
+    const p=screenToGround(sx,sy);
+    if(!p) return;
+    let x=p.x, y=p.y;
+    const rr=Math.hypot(x,y);
+    const maxR=lethalR-.18;
+    if(rr>maxR){
+      x*=maxR/rr;
+      y*=maxR/rr;
+    }
+    player.x=x;
+    player.y=y;
+    player.sliding=false;
+    slideWillDie=false;
+    lastSlideAngle=null;
+    lastInputAngle=null;
+    const result=document.getElementById('result');
+    setResult('placementChanged');
+  }
+
+  function poly3(points, fill, stroke=null, width=1){
+    const pp=points.map(project).filter(Boolean);
+    if(pp.length<3) return;
+    ctx.beginPath(); ctx.moveTo(pp[0].x,pp[0].y);
+    for(let i=1;i<pp.length;i++) ctx.lineTo(pp[i].x,pp[i].y);
+    ctx.closePath();
+    if(fill){ctx.fillStyle=fill;ctx.fill()}
+    if(stroke){ctx.strokeStyle=stroke;ctx.lineWidth=width;ctx.stroke()}
+  }
+  function line3(a,b,stroke,width=1){
+    const A=project(a), B=project(b); if(!A||!B)return;
+    ctx.strokeStyle=stroke;ctx.lineWidth=width;ctx.beginPath();ctx.moveTo(A.x,A.y);ctx.lineTo(B.x,B.y);ctx.stroke();
+  }
+  function circleDisc(cx,cy,r,z,fill,stroke=null){
+    const pts=[]; for(let i=0;i<96;i++){const a=i/96*Math.PI*2;pts.push({x:cx+Math.sin(a)*r,y:cy+Math.cos(a)*r,z})}
+    poly3(pts,fill,stroke,1);
+  }
+
+  function angleDiff(a,b){
+    let d=(a-b+Math.PI)%(Math.PI*2)-Math.PI;
+    if(d<-Math.PI) d+=Math.PI*2;
+    return d;
+  }
+
+  function drawLabel3D(x,y,z,label,color){
+    const p=project({x,y,z});
+    if(!p)return;
+    const scale=clamp(180/p.z,0.75,1.35);
+    const w=30*scale,h=30*scale;
+    ctx.fillStyle='rgba(8,12,20,.76)';
+    ctx.strokeStyle=color;
+    ctx.lineWidth=2.5;
+    ctx.beginPath();
+    ctx.roundRect(p.x-w/2,p.y-h/2,w,h,6);
+    ctx.fill(); ctx.stroke();
+    ctx.fillStyle=color;
+    ctx.font=`800 ${Math.round(17*scale)}px system-ui`;
+    ctx.textAlign='center';
+    ctx.textBaseline='middle';
+    ctx.fillText(label,p.x,p.y+1);
+  }
+
+  function drawWaymark(x,y,label,color){
+    // translucent vertical marker beam
+    const base=project({x,y,z:.02}), top=project({x,y,z:1.25});
+    if(base&&top){
+      const grad=ctx.createLinearGradient(base.x,base.y,top.x,top.y);
+      grad.addColorStop(0,'rgba(255,255,255,.05)');
+      grad.addColorStop(.35,color);
+      grad.addColorStop(1,'rgba(255,255,255,.06)');
+      ctx.strokeStyle=grad;
+      ctx.globalAlpha=.26;
+      ctx.lineWidth=6;
+      ctx.beginPath();ctx.moveTo(base.x,base.y);ctx.lineTo(top.x,top.y);ctx.stroke();
+      ctx.globalAlpha=1;
+    }
+    drawLabel3D(x,y,1.48,label,color);
+  }
+
+  function drawBoss(){
+    const foot=project({x:boss.x,y:boss.y,z:.05});
+    const body=project({x:boss.x,y:boss.y,z:1.55});
+    const head=project({x:boss.x,y:boss.y,z:2.25});
+    if(!foot||!body||!head)return;
+
+    // 人型：棒＋丸。見やすいようにピンクで強調。
+    ctx.strokeStyle='rgba(255,105,190,.98)';
+    ctx.lineWidth=16;
+    ctx.beginPath();
+    ctx.moveTo(foot.x,foot.y);
+    ctx.lineTo(body.x,body.y);
+    ctx.stroke();
+
+    ctx.strokeStyle='rgba(255,225,242,.95)';
+    ctx.lineWidth=3;
+    ctx.beginPath();
+    ctx.moveTo(foot.x,foot.y);
+    ctx.lineTo(body.x,body.y);
+    ctx.stroke();
+
+    const headR=clamp(130/head.z,8,14);
+    ctx.fillStyle='rgba(255,105,190,.98)';
+    ctx.beginPath();
+    ctx.arc(head.x,head.y,headR,0,Math.PI*2);
+    ctx.fill();
+
+    ctx.strokeStyle='rgba(255,225,242,.95)';
+    ctx.lineWidth=2.5;
+    ctx.beginPath();
+    ctx.arc(head.x,head.y,headR,0,Math.PI*2);
+    ctx.stroke();
+
+    ctx.fillStyle='#ffe8f4';
+    ctx.font='800 12px system-ui';
+    ctx.textAlign='center';
+    ctx.fillText('BOSS',head.x,head.y-18);
+
+    // 向き確認用の床矢印は残す
+    const fx=Math.sin(boss.facing), fy=Math.cos(boss.facing);
+    const rx=Math.cos(boss.facing), ry=-Math.sin(boss.facing);
+    poly3([
+      {x:boss.x+fx*1.25,y:boss.y+fy*1.25,z:.09},
+      {x:boss.x-fx*.12+rx*.42,y:boss.y-fy*.12+ry*.42,z:.09},
+      {x:boss.x-fx*.12-rx*.42,y:boss.y-fy*.12-ry*.42,z:.09}
+    ], 'rgba(255,105,190,.98)');
+  }
+
+  function bossRearAngle(){
+    return boss.facing + Math.PI;
+  }
+
+  function pointOnArenaFromBoss(angle){
+    const dx=Math.sin(angle), dy=Math.cos(angle);
+    const bx=boss.x, by=boss.y;
+    // Ray / arena-circle intersection; take the forward positive root.
+    const B=2*(bx*dx+by*dy);
+    const C=bx*bx+by*by-(arenaR-0.02)*(arenaR-0.02);
+    const disc=Math.max(0,B*B-4*C);
+    const t=(-B+Math.sqrt(disc))/2;
+    return {x:bx+dx*t,y:by+dy*t};
+  }
+
+  function drawSafeWedge(){
+    const rear=bossRearAngle();
+    const half=safeAngleDeg*Math.PI/360;
+    const pts=[{x:boss.x,y:boss.y,z:.035}];
+    const steps=28;
+
+    for(let i=0;i<=steps;i++){
+      const a=rear-half+(2*half)*(i/steps);
+      const p=pointOnArenaFromBoss(a);
+      pts.push({x:p.x,y:p.y,z:.035});
+    }
+
+    poly3(pts,'rgba(120,205,170,.12)','rgba(155,235,195,.45)',1.5);
+
+    for(const a of [rear-half,rear+half]){
+      const p=pointOnArenaFromBoss(a);
+      line3(
+        {x:boss.x,y:boss.y,z:.05},
+        {x:p.x,y:p.y,z:.05},
+        'rgba(170,240,205,.64)',2
+      );
+    }
+  }
+
+  function drawDiamond(x,y,z,size,fill){
+    const c=project({x,y,z}); if(!c)return;
+    const top=project({x,y,z:z+size});
+    const bottom=project({x,y,z:z-size});
+    const left=project({x:x-size*.55,y,z});
+    const right=project({x:x+size*.55,y,z});
+    if(!top||!bottom||!left||!right)return;
+    ctx.fillStyle=fill;
+    ctx.beginPath();ctx.moveTo(top.x,top.y);ctx.lineTo(right.x,right.y);ctx.lineTo(bottom.x,bottom.y);ctx.lineTo(left.x,left.y);ctx.closePath();ctx.fill();
+  }
+
+  function drawScene(now){
+    ctx.clearRect(0,0,W,H);
+    const g=ctx.createLinearGradient(0,0,0,H);
+    g.addColorStop(0,'#121a2a'); g.addColorStop(1,'#070b11');
+    ctx.fillStyle=g;ctx.fillRect(0,0,W,H);
+
+    // floor shadow / platform thickness illusion
+    circleDisc(0,0,arenaR, -0.18,'#171e2b','#10151f');
+    circleDisc(0,0,arenaR, 0,'#2f3948','#7fa3cf');
+
+    // lethal outer rim
+    const rimPts=[];
+    for(let i=0;i<=128;i++){
+      const a=i/128*Math.PI*2;
+      rimPts.push({x:Math.sin(a)*lethalR,y:Math.cos(a)*lethalR,z:.055});
+    }
+    for(let i=0;i<rimPts.length-1;i++){
+      line3(
+        rimPts[i],rimPts[i+1],
+        now < deathFlashUntil ? 'rgba(255,90,90,.95)' : 'rgba(255,150,150,.42)',
+        now < deathFlashUntil ? 5 : 2
+      );
+    }
+
+    // subtle ice rings
+    for(const rr of [2.5,5,7.5]){
+      const pts=[];
+      for(let i=0;i<=96;i++){const a=i/96*Math.PI*2;pts.push({x:Math.sin(a)*rr,y:Math.cos(a)*rr,z:0.015})}
+      for(let i=0;i<pts.length-1;i++) line3(pts[i],pts[i+1],'rgba(185,220,255,.12)',1);
+    }
+    // cardinal / diagonal guides
+    for(let i=0;i<8;i++){
+      const a=i*Math.PI/4;
+      line3({x:0,y:0,z:.02},{x:Math.sin(a)*arenaR,y:Math.cos(a)*arenaR,z:.02}, i%2===0?'rgba(210,230,255,.20)':'rgba(210,230,255,.08)',1);
+    }
+
+    // Target corridor and 8-way FF14-style waymarks
+    drawSafeWedge();
+    const markerColors={
+      '1':'#ff6d79','2':'#f3d45f','3':'#66d5ef','4':'#bf79ff',
+      'A':'#ff6d79','B':'#f3d45f','C':'#66d5ef','D':'#bf79ff'
+    };
+
+    // A/B/C/D are fixed on cardinals. Number sequence starts clockwise after A.
+    // 1234 => A-1-B-2-C-3-D-4
+    // 2341 => A-2-B-3-C-4-D-1
+    const nums = numberMarkerOrder.split('');
+    const waymarks=[
+      ['A',0,markerColors.A],
+      [nums[0],45,markerColors[nums[0]]],
+      ['B',90,markerColors.B],
+      [nums[1],135,markerColors[nums[1]]],
+      ['C',180,markerColors.C],
+      [nums[2],225,markerColors[nums[2]]],
+      ['D',270,markerColors.D],
+      [nums[3],315,markerColors[nums[3]]]
+    ];
+    for(const [label,d,color] of waymarks){
+      const a=d*Math.PI/180;
+      drawWaymark(Math.sin(a)*waymarkR,Math.cos(a)*waymarkR,label,color);
+    }
+    drawBoss();
+
+    // player body
+    const base=project({x:player.x,y:player.y,z:.08});
+    const head=project({x:player.x,y:player.y,z:1.18});
+    if(base&&head){
+      const r=clamp(150/base.z,7,15);
+      ctx.strokeStyle='rgba(0,0,0,.55)';ctx.lineWidth=5;
+      ctx.beginPath();ctx.moveTo(base.x,base.y);ctx.lineTo(head.x,head.y);ctx.stroke();
+      ctx.strokeStyle='#e7f1ff';ctx.lineWidth=3;
+      ctx.beginPath();ctx.moveTo(base.x,base.y);ctx.lineTo(head.x,head.y);ctx.stroke();
+      ctx.fillStyle = now<flashUntil ? '#ff9e9e' : '#d9ecff';
+      ctx.beginPath();ctx.arc(head.x,head.y,r,0,Math.PI*2);ctx.fill();
+    }
+    // facing arrow on floor
+    const fa=player.facing, fx=Math.sin(fa), fy=Math.cos(fa);
+    const rx=Math.cos(fa), ry=-Math.sin(fa);
+    poly3([
+      {x:player.x+fx*1.05,y:player.y+fy*1.05,z:.07},
+      {x:player.x-fx*.25+rx*.42,y:player.y-fy*.25+ry*.42,z:.07},
+      {x:player.x-fx*.25-rx*.42,y:player.y-fy*.25-ry*.42,z:.07}
+    ], 'rgba(255,220,120,.95)');
+
+    // camera forward indicator in lower center
+    const B=cameraBasis();
+    const c0=project({x:player.x,y:player.y,z:.03});
+    const c1=project({x:player.x+B.gf.x*2.1,y:player.y+B.gf.y*2.1,z:.03});
+    if(c0&&c1){
+      ctx.strokeStyle='rgba(126,205,255,.75)';ctx.lineWidth=2;
+      ctx.beginPath();ctx.moveTo(c0.x,c0.y);ctx.lineTo(c1.x,c1.y);ctx.stroke();
+    }
+
+    if(now < deathFlashUntil){
+      ctx.fillStyle='rgba(150,0,0,.20)';
+      ctx.fillRect(0,0,W,H);
+      ctx.fillStyle='#ffd0d0';
+      ctx.font='800 34px system-ui';
+      ctx.textAlign='center';
+      ctx.fillText('外周接触',W/2,H*0.24);
+    }
+  }
+
+  function canSlide(){ return movementMode==='slide' && !player.sliding; }
+
+  function startSlide(worldAngle, source=''){
+    if(!canSlide()) return;
+    lastInputAngle=worldAngle;
+    lastSlideAngle=worldAngle;
+    player.facing=worldAngle;
+    const dist=arenaR*2*slideRatio;
+    const dx=Math.sin(worldAngle), dy=Math.cos(worldAngle);
+    let ex=player.x+dx*dist;
+    let ey=player.y+dy*dist;
+    slideWillDie=false;
+
+    const er=Math.hypot(ex,ey);
+    if(er>=lethalR){
+      const B=2*(player.x*dx+player.y*dy);
+      const C=player.x*player.x+player.y*player.y-lethalR*lethalR;
+      const disc=Math.max(0,B*B-4*C);
+      const hitDist=(-B+Math.sqrt(disc))/2;
+      if(hitDist>=0 && hitDist<=dist){
+        ex=player.x+dx*hitDist;
+        ey=player.y+dy*hitDist;
+        slideWillDie=true;
+      }
+    }
+
+    player.sx=player.x;player.sy=player.y;player.ex=ex;player.ey=ey;
+    player.t0=performance.now();player.sliding=true;
+    msg.textContent=source;
+    setTimeout(()=>{ if(msg.textContent===source) msg.textContent=''; },500);
+  }
+
+  function slideCameraForward(){
+    if(movementMode!=='slide') return;
+    startSlide(camYaw, t('macroBtn'));
+  }
+
+  function killAtEdge(){
+    const now=performance.now();
+
+    // 死亡は練習用のフィードバックだけ。操作は止めない。
+    // 外周に押しつけ続けても画面が点滅し続けないよう短いクールダウンを入れる。
+    if(now-lastDeathAt < 450) return;
+    lastDeathAt=now;
+    deathFlashUntil=now+260;
+
+    canvas.classList.remove('deadFlash');
+    void canvas.offsetWidth;
+    canvas.classList.add('deadFlash');
+  }
+
+  function setBossByDirectionDeg(dirDeg){
+    const a=dirDeg*Math.PI/180;
+    boss.x=Math.sin(a)*5.0;
+    boss.y=Math.cos(a)*5.0;
+    boss.facing=((dirDeg+180)%360)*Math.PI/180; // face center
+    boss.dirDeg=((dirDeg%360)+360)%360;
+  }
+
+  function setPlayerByPolarDegRadius(dirDeg,radius){
+    const a=dirDeg*Math.PI/180;
+    player.x=Math.sin(a)*radius;
+    player.y=Math.cos(a)*radius;
+    player.facing=0;
+    player.sliding=false;
+    dragCameraTarget=null;
+    lastSlideAngle=null;
+    lastInputAngle=null;
+    slideWillDie=false;
+    deathFlashUntil=0;
+    lastDeathAt=-Infinity;
+  }
+
+  function randomizeCameraAngleOnly(){
+    // A方向を基準に左右30〜90°の範囲でランダム。
+    // ただし、現在のキャラ位置から見て「完全に外周へ向く方向」
+    // （円の中心に背を向ける向き）の前後15°は除外する。
+    const outwardAngle=Math.atan2(player.x,player.y);
+    const avoidHalfAngle=15*Math.PI/180;
+
+    let sign=1;
+    let offsetDeg=30;
+    let candidate=0;
+
+    for(let i=0;i<40;i++){
+      sign=Math.random()<0.5 ? -1 : 1;
+      offsetDeg=30 + Math.random()*60;
+      candidate=sign*offsetDeg*Math.PI/180;
+
+      const diff=Math.abs(angleDiff(candidate,outwardAngle));
+      if(diff>=avoidHalfAngle){
+        camYaw=candidate;
+        return {sign, offsetDeg};
+      }
+    }
+
+    // 念のため候補が見つからなかった場合は、外向きから15°ずらす。
+    const d=angleDiff(candidate,outwardAngle);
+    candidate=outwardAngle + (d>=0 ? avoidHalfAngle : -avoidHalfAngle);
+    camYaw=candidate;
+
+    return {
+      sign: camYaw<0 ? -1 : 1,
+      offsetDeg: Math.abs(deg(camYaw)>180 ? deg(camYaw)-360 : deg(camYaw))
+    };
+  }
+
+  function setStandardStartState(){
+    setBossByDirectionDeg(0); // A
+    setPlayerByPolarDegRadius(180, 7.5); // south / C side third ring
+  }
+
+  function randomizePlayerStartSectorAround(baseDeg){
+    // 指定方向を中心に、その両隣のマカの間まで含めた90°範囲
+    // 例: baseDeg=180 なら 135°〜225°
+    const angleDeg = baseDeg - 45 + Math.random()*90;
+    const radius = 7.5 + (Math.random()*1.0 - 0.5); // 7.0〜8.0
+    setPlayerByPolarDegRadius(angleDeg, radius);
+    return {angleDeg, radius};
+  }
+
+  function randomizePlayerStartOppositeBoss(){
+    // ボス位置の対角側＋その両隣のマカの間
+    // 例: ボスA(0°)ならキャラは 135°〜225°
+    const oppositeDeg=(boss.dirDeg+180)%360;
+    return randomizePlayerStartSectorAround(oppositeDeg);
+  }
+
+  function randomizePlayerStartBossSide(){
+    // ボス側マカ＋その両隣のマカの間
+    // 例: ボスA(0°)ならキャラは 315°〜45°
+    return randomizePlayerStartSectorAround(boss.dirDeg);
+  }
+
+  function reset(){
+    setStandardStartState();
+    camYaw=0; // A / north
+    flashUntil=performance.now()+220;
+    const result=document.getElementById('result');
+    setResult('resetStatus');
+  }
+
+  function worldAngleFromCameraInput(ix,iy){
+    // input: ix right +, iy forward +
+    // camera forward yaw + right vector
+    const fx=Math.sin(camYaw), fy=Math.cos(camYaw);
+    const rx=Math.cos(camYaw), ry=-Math.sin(camYaw);
+    const wx=fx*iy+rx*ix, wy=fy*iy+ry*ix;
+    return Math.atan2(wx,wy);
+  }
+
+  addEventListener('keydown',e=>{
+    if(['Space','ArrowLeft','ArrowRight','ArrowUp','ArrowDown'].includes(e.code)) e.preventDefault();
+    keys[e.code]=true;
+    if(e.code==='KeyR') reset();
+    if(e.code==='Space' && !prevKeys[e.code]) slideCameraForward();
+  });
+  addEventListener('keyup',e=>keys[e.code]=false);
+
+  const heightSlider=document.getElementById('heightSlider');
+  const heightValue=document.getElementById('heightValue');
+  const screenYSlider=document.getElementById('screenYSlider');
+  const screenYValue=document.getElementById('screenYValue');
+  const cameraSpeedSlider=document.getElementById('cameraSpeedSlider');
+  const cameraSpeedValue=document.getElementById('cameraSpeedValue');
+  const fovSlider=document.getElementById('fovSlider');
+  const fovValue=document.getElementById('fovValue');
+  const slideSlider=document.getElementById('slideSlider');
+  const slideValue=document.getElementById('slideValue');
+  const safeSlider=document.getElementById('safeSlider');
+  const safeValue=document.getElementById('safeValue');
+  const slideSensitivitySlider=document.getElementById('slideSensitivitySlider');
+  const slideSensitivityValue=document.getElementById('slideSensitivityValue');
+  const noBossSideStartCheckbox=document.getElementById('noBossSideStart');
+
+  let dragging=false, draggingPlayer=false, lastX=0, lastY=0;
+
+  canvas.addEventListener('pointerdown',e=>{
+    dragging=true;
+    draggingPlayer=playerHitTest(e.clientX,e.clientY);
+    lastX=e.clientX;
+    lastY=e.clientY;
+    if(draggingPlayer){
+      // Freeze the camera while placing the player so the character follows the pointer.
+      dragCameraTarget={x:player.x,y:player.y+0.7,z:0.4};
+      player.sliding=false;
+      placePlayerOnGround(e.clientX,e.clientY);
+    }
+    canvas.setPointerCapture(e.pointerId);
+  });
+
+  canvas.addEventListener('pointermove',e=>{
+    if(!dragging)return;
+
+    if(draggingPlayer){
+      placePlayerOnGround(e.clientX,e.clientY);
+      return;
+    }
+
+    const dx=e.clientX-lastX;
+    const dy=e.clientY-lastY;
+    lastX=e.clientX;
+    lastY=e.clientY;
+
+    camYaw += dx*0.007*cameraSpeed;
+
+    // Vertical mouse drag changes pitch via camera height and stays synced to the slider.
+    camHeight=clamp(camHeight-dy*0.045*cameraSpeed,3.5,16);
+    heightSlider.value=camHeight.toFixed(1);
+    heightValue.textContent=camHeight.toFixed(1);
+  });
+
+  function endPointerDrag(){
+    if(draggingPlayer){
+      dragCameraTarget=null;
+      const result=document.getElementById('result');
+      setResult('charPlaced');
+    }
+    dragging=false;
+    draggingPlayer=false;
+  }
+
+  canvas.addEventListener('pointerup',endPointerDrag);
+  canvas.addEventListener('pointercancel',endPointerDrag);
+
+  canvas.addEventListener('wheel',e=>{
+    e.preventDefault();
+
+    // Wheel up = zoom in, wheel down = zoom out.
+    // deltaMode normalization keeps trackpads / traditional mouse wheels usable.
+    const unit = e.deltaMode===1 ? 16 : (e.deltaMode===2 ? H : 1);
+    const delta = e.deltaY * unit;
+    camBack=clamp(camBack + delta*0.012, minCamBack, maxCamBack);
+  }, {passive:false});
+
+  document.getElementById('resetBtn').onclick=reset;
+
+  const randomStartBtn=document.getElementById('randomStartBtn');
+  const randomBothBtn=document.getElementById('randomBothBtn');
+
+  function randomizeCameraStart(){
+    setStandardStartState();
+    const {sign, offsetDeg} = randomizeCameraAngleOnly();
+
+    setResult('randomCameraStatus', {side: sideWord(sign), offset: offsetDeg.toFixed(0)});
+  }
+
+  function randomizePositionAndCameraStart(){
+    // Boss: one of the 8-way markers
+    const bossChoices=[0,45,90,135,180,225,270,315];
+    const bossDeg=bossChoices[Math.floor(Math.random()*bossChoices.length)];
+    setBossByDirectionDeg(bossDeg);
+
+    // Player: either opposite-side sector OR boss-side sector
+    const useBossSide = noBossSideStart ? false : Math.random()<0.5;
+    const startInfo = useBossSide
+      ? randomizePlayerStartBossSide()
+      : randomizePlayerStartOppositeBoss();
+    const {angleDeg, radius} = startInfo;
+
+    // Camera: random from A-based forward reference for practice
+    const {sign, offsetDeg} = randomizeCameraAngleOnly();
+
+    setResult('randomBothStatus', {
+      bossDeg: bossDeg.toFixed(0),
+      sector: useBossSide ? t('bossSector') : t('oppositeSector'),
+      angleDeg: (((angleDeg%360)+360)%360).toFixed(0),
+      radius: radius.toFixed(1),
+      side: sideWord(sign),
+      offset: offsetDeg.toFixed(0)
+    });
+  }
+
+  randomStartBtn.onclick=randomizeCameraStart;
+  randomBothBtn.onclick=randomizePositionAndCameraStart;
+
+  const modeBtn=document.getElementById('modeBtn');
+  const macroBtn=document.getElementById('macroBtn');
+
+  function toggleMovementMode(){
+    movementMode = movementMode==='slide' ? 'walk' : 'slide';
+    player.sliding=false;
+    slideWillDie=false;
+    updateModeUI();
+    setResult(movementMode==='slide' ? 'modeSlideStatus' : 'modeWalkStatus');
+  }
+
+  modeBtn.onclick=toggleMovementMode;
+  macroBtn.onclick=slideCameraForward;
+  const markerBtn=document.getElementById('markerBtn');
+  markerBtn.onclick=()=>{
+    numberMarkerOrder = numberMarkerOrder==='1234' ? '2341' : '1234';
+    markerBtn.textContent=numberMarkerOrder;
+  };
+
+
+  slidePadSelect.addEventListener('change',()=>{
+    slidePadButton=Number(slidePadSelect.value);
+  });
+
+  randomBothPadSelect.addEventListener('change',()=>{
+    randomBothPadButton=Number(randomBothPadSelect.value);
+  });
+
+  randomPadSelect.addEventListener('change',()=>{
+    randomPadButton=Number(randomPadSelect.value);
+  });
+
+  modePadSelect.addEventListener('change',()=>{
+    modePadButton=Number(modePadSelect.value);
+  });
+
+
+  heightSlider.addEventListener('input',()=>{
+    camHeight=Number(heightSlider.value);
+    heightValue.textContent=camHeight.toFixed(1);
+  });
+
+  screenYSlider.addEventListener('input',()=>{
+    screenYRatio=Number(screenYSlider.value)/100;
+    screenYValue.textContent=screenYSlider.value+'%';
+  });
+
+  cameraSpeedSlider.addEventListener('input',()=>{
+    cameraSpeed=Number(cameraSpeedSlider.value);
+    cameraSpeedValue.textContent=cameraSpeed.toFixed(1)+'×';
+  });
+
+  fovSlider.addEventListener('input',()=>{
+    fovDeg=Number(fovSlider.value);
+    fov=fovDeg*Math.PI/180;
+    fovValue.textContent=fovDeg.toFixed(0)+'°';
+  });
+
+  slideSlider.addEventListener('input',()=>{
+    slideRatio=Number(slideSlider.value)/100;
+    slideValue.textContent=slideSlider.value+'%';
+  });
+
+  safeSlider.addEventListener('input',()=>{
+    safeAngleDeg=Number(safeSlider.value);
+    safeValue.textContent=safeSlider.value+'°';
+  });
+
+  slideSensitivitySlider.addEventListener('input',()=>{
+    slideStartSensitivity=Number(slideSensitivitySlider.value);
+    slideSensitivityValue.textContent=slideStartSensitivity.toFixed(2);
+  });
+
+  noBossSideStartCheckbox.addEventListener('change',()=>{
+    noBossSideStart=noBossSideStartCheckbox.checked;
+  });
+
+  function pollGamepad(){
+    const gps=navigator.getGamepads ? navigator.getGamepads() : [];
+    const gp=[...gps].find(Boolean);
+    if(!gp) return {lx:0,ly:0,rx:0,ry:0,buttons:[]};
+    let lx=gp.axes[0]||0;
+    let ly=-(gp.axes[1]||0);
+    let rx=gp.axes[2]||0;
+    let ry=gp.axes[3]||0;
+
+    // 左スティックはX/Yを個別に丸めない。
+    // 中央付近の微小ノイズだけ円形デッドゾーンで無視し、
+    // 実際のアナログ角度はそのまま滑走方向に反映する。
+    const leftMag=Math.hypot(lx,ly);
+    if(leftMag<.08){
+      lx=0;
+      ly=0;
+    }
+
+    // 右スティックのカメラ操作は従来どおり。
+    if(Math.abs(rx)<.16) rx=0;
+    if(Math.abs(ry)<.16) ry=0;
+    const buttons=gp.buttons.map(b=>!!b.pressed);
+    return {lx,ly,rx,ry,buttons};
+  }
+
+  function buttonPressedThisFrame(gp,index){
+    if(index<0) return false;
+    return !!gp.buttons[index] && !gpPrevButtons[index];
+  }
+
+  let prevT=performance.now();
+  function frame(now){
+    const dt=Math.min((now-prevT)/1000,.05);prevT=now;
+
+    // Camera rotation: keyboard and right stick
+    const gp=pollGamepad();
+    lastGpLX=gp.lx;
+    lastGpLY=gp.ly;
+    const rot=(keys.ArrowRight?1:0)-(keys.ArrowLeft?1:0);
+    camYaw += (rot*1.55 + gp.rx*2.15)*cameraSpeed*dt;
+
+    const verticalKey=(keys.ArrowDown?1:0)-(keys.ArrowUp?1:0);
+    const verticalInput=verticalKey + gp.ry;
+    if(verticalInput){
+      camHeight=clamp(camHeight + verticalInput*5.2*cameraSpeed*dt,3.5,16);
+      heightSlider.value=camHeight.toFixed(1);
+      heightValue.textContent=camHeight.toFixed(1);
+    }
+
+    if(buttonPressedThisFrame(gp,slidePadButton)) slideCameraForward();
+    if(buttonPressedThisFrame(gp,randomBothPadButton)) randomizePositionAndCameraStart();
+    if(buttonPressedThisFrame(gp,randomPadButton)) randomizeCameraStart();
+    if(buttonPressedThisFrame(gp,modePadButton)) toggleMovementMode();
+
+    const kx=(keys.KeyD?1:0)-(keys.KeyA?1:0);
+    const ky=(keys.KeyW?1:0)-(keys.KeyS?1:0);
+    const prevKx=(prevKeys.KeyD?1:0)-(prevKeys.KeyA?1:0);
+    const prevKy=(prevKeys.KeyW?1:0)-(prevKeys.KeyS?1:0);
+    const mag=Math.hypot(gp.lx,gp.ly);
+
+    if(movementMode==='slide'){
+      if((kx||ky) && !(prevKx||prevKy) && canSlide()){
+        const [nx,ny]=norm2(kx,ky);
+        startSlide(worldAngleFromCameraInput(nx,ny),'WASD');
+      }
+
+      if(mag<Math.max(.08, slideStartSensitivity*.65)) stickArmed=true;
+      if(mag>slideStartSensitivity && stickArmed && canSlide()){
+        stickArmed=false;
+        const [nx,ny]=norm2(gp.lx,gp.ly);
+        startSlide(worldAngleFromCameraInput(nx,ny),'PAD');
+      }
+    } else {
+      let ix=kx, iy=ky;
+      if(mag>.20){
+        ix=gp.lx;
+        iy=gp.ly;
+      }
+      const im=Math.hypot(ix,iy);
+      if(im>.001){
+        const capped=Math.min(1,im);
+        const nx=ix/im, ny=iy/im;
+        const ang=worldAngleFromCameraInput(nx,ny);
+        player.facing=ang;
+        const step=walkSpeed*capped*dt;
+        const nxp=player.x+Math.sin(ang)*step;
+        const nyp=player.y+Math.cos(ang)*step;
+        const nr=Math.hypot(nxp,nyp);
+        if(nr>=lethalR){
+          const scale=lethalR/nr;
+          player.x=nxp*scale;
+          player.y=nyp*scale;
+          killAtEdge();
+        }else{
+          player.x=nxp;
+          player.y=nyp;
+        }
+      }
+    }
+
+    if(player.sliding){
+      const t=clamp((now-player.t0)/player.duration,0,1);
+      const q=easeOutCubic(t);
+      player.x=lerp(player.sx,player.ex,q);
+      player.y=lerp(player.sy,player.ey,q);
+      if(t>=1){
+        player.sliding=false;
+        if(slideWillDie || Math.hypot(player.x,player.y)>=lethalR-.01){
+          slideWillDie=false;
+          killAtEdge();
+        }else{
+          const fromBossAngle=Math.atan2(player.x-boss.x,player.y-boss.y);
+          const rear=bossRearAngle();
+          const diff=Math.abs(angleDiff(fromBossAngle,rear))*180/Math.PI;
+          const behindDistance=Math.hypot(player.x-boss.x,player.y-boss.y);
+          const ok=behindDistance>0.35 && diff <= safeAngleDeg/2;
+          const result=document.getElementById('result');
+          if(ok){
+            setResult('success', {diff: diff.toFixed(1)}, '#aeeecb');
+          }else{
+            setResult('miss', {diff: diff.toFixed(1), allow: (safeAngleDeg/2).toFixed(1)}, '#ffaaaa');
+            flashUntil=now+500;
+          }
+        }
+      }
+    }
+
+    drawScene(now);
+
+    prevKeys={...keys};
+    gpPrevButtons=gp.buttons.slice();
+    requestAnimationFrame(frame);
+  }
+  refreshPadSelects();
+  setBossByDirectionDeg(0);
+  updateModeUI();
+  setResult('initial');
+  applyLanguage();
+  reset();
+  requestAnimationFrame(frame);
+})();
+</script>
+</body>
+</html>
