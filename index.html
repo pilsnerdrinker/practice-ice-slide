@@ -63,7 +63,7 @@
     <button id="langJaBtn" class="langBtn" type="button">JA</button>
     <button id="langEnBtn" class="langBtn" type="button">EN</button>
   </div>
-  <a href="./README.md" target="_blank" rel="noopener">README</a>
+  <a id="readmeLink" href="https://github.com/pilsnerdrinker/practice-ice-slide#readme" target="_blank" rel="noopener">README</a>
   <a href="https://pilsnerdrinker.github.io/raidshelf/" target="_blank" rel="noopener">raidshelf</a>
 </div>
 
@@ -372,6 +372,11 @@
 
     document.getElementById('langJaBtn').classList.toggle('active', currentLang==='ja');
     document.getElementById('langEnBtn').classList.toggle('active', currentLang==='en');
+
+    document.getElementById('readmeLink').href =
+      currentLang === 'en'
+        ? 'https://github.com/pilsnerdrinker/practice-ice-slide#english'
+        : 'https://github.com/pilsnerdrinker/practice-ice-slide#readme';
 
     updateModeUI();
     refreshPadSelects();
@@ -1297,5 +1302,6 @@
   requestAnimationFrame(frame);
 })();
 </script>
+  <!-- Cloudflare Web Analytics --><script defer src='https://static.cloudflareinsights.com/beacon.min.js' data-cf-beacon='{"token": "69e65a6b5ec64e5bb4b6a6c1c07c4667"}'></script><!-- End Cloudflare Web Analytics -->
 </body>
 </html>
